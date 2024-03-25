@@ -5,3 +5,7 @@
 5,Which word matches the image?,elk,elk,deer,moose
 6,Which word matches the image?,ladybird,ladybird,Lymexyloidea,Endomychidae
 7,Which word matches the image?,nightingale,robin,nightingale,silverbird
+8,Which word matches the image?,elephant,bear, lion, elephant
+9,Which word matches the image?,leopard,bear,tiger,leopard
+10,Which word matches the image?,lion,tiger,lion,leopard
+11,Which animal is this,Duck,Duck,Swan,Goose

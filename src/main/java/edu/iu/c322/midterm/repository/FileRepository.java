@@ -8,10 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,9 +51,21 @@ public class FileRepository {
         return id;
     }
 
-
-
-
+    public int addQuiz(Quiz quiz) throws IOException {
+        Path path = Paths.get(QUIZ_DATABASE_NAME);
+        List<Quiz> quizzes = findAllQuizzes();
+        int id = 0;
+        for(Quiz q : quizzes) {
+            if(q.getId() > id) {
+                id = q.getId();
+            }
+        }
+        id = id + 1;
+        quiz.setId(id);
+        String data = quiz.toLine(id);
+        appendToFile(path, data + NEW_LINE);
+        return id;
+    }
 
     public List<Question> findAllQuestions() throws IOException {
         List<Question> result = new ArrayList<>();
@@ -73,18 +82,28 @@ public class FileRepository {
         return result;
     }
 
-
-
-
+    public List<Quiz> findAllQuizzes() throws IOException {
+        List<Quiz> result = new ArrayList<>();
+        Path path = Paths.get(QUIZ_DATABASE_NAME);
+        if (Files.exists(path)) {
+            List<String> data = Files.readAllLines(path);
+            for (String line : data) {
+                if(line.trim().length() != 0) {
+                    Quiz q = Quiz.fromLine(line);
+                    result.add(q);
+                }
+            }
+        }
+        return result;
+    }
 
     public List<Question> find(String answer) throws IOException {
-        List<Question> animals = findAllQuestions();
+        List<Question> questions = findAllQuestions();
         List<Question> result = new ArrayList<>();
-        for (Question question : animals) {
-            if (answer != null && !question.getAnswer().trim().equalsIgnoreCase(answer.trim())) {
-                continue;
+        for (Question question : questions) {
+            if (question.getAnswer().equals(answer)) {
+                result.add(question);
             }
-            result.add(question);
         }
         return result;
     }
@@ -92,9 +111,10 @@ public class FileRepository {
     public List<Question> find(List<Integer> ids) throws IOException {
         List<Question> questions = findAllQuestions();
         List<Question> result = new ArrayList<>();
-        for (int id : ids) {
-            Question q = questions.stream().filter(x -> x.getId() == id).toList().get(0);
-            result.add(q);
+        for (Question question : questions) {
+            if (ids.contains(question.getId())) {
+                result.add(question);
+            }
         }
         return result;
     }
@@ -110,6 +130,37 @@ public class FileRepository {
         }
         return null;
     }
+
+    public Quiz getQuiz(Integer id) throws IOException {
+        List<Quiz> quizzes = findAllQuizzes();
+        for (Quiz quiz : quizzes) {
+            if (quiz.getId() == id) {
+                return quiz;
+            }
+        }
+        return null;
+    }
+
+    public void updateQuiz(Integer id, List<Integer> questionIds, String title) throws  IOException {
+        List<Quiz> quizzes = findAllQuizzes();
+        clearFileContent(QUIZ_DATABASE_NAME);
+
+        for (Quiz quiz : quizzes) {
+            if (quiz.getId() == id) {
+                if(questionIds != null){
+                    quiz.setQuestionIds(questionIds);
+                    quiz.setQuestions(find(questionIds));
+                    }
+                }
+
+                if(title != null){
+                    quiz.setTitle(title);
+                }
+                addQuiz(quiz);
+            }
+        }
+
+
 
     public boolean updateImage(int id, MultipartFile file) throws IOException {
         System.out.println(file.getOriginalFilename());
@@ -129,6 +180,11 @@ public class FileRepository {
                 + "/" + id + fileExtension);
         byte[] image = Files.readAllBytes(path);
         return image;
+    }
+
+    private void clearFileContent(String fileName) throws IOException {
+        Path path = Paths.get(fileName);
+        Files.write(path, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
     }
 
 
